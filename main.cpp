@@ -1,23 +1,30 @@
 #include <iostream>
-#include <fstream>
+#include <string>
+
+#include "includes/Simulation.h"
 
 using namespace std;
+
 int main()
 {
-    ifstream inFile;
-    // open the file stream
-    inFile.open("simple.txt");
-    // check if opening a file failed
-    if (inFile.fail()) {
-        cerr << "Error opeing a file" << endl;
-        inFile.close();
-        exit(1);
-    }
-    string line;
-    while (getline(inFile, line))
-    {
-        cout << line << endl;
-    }
-    // close the file stream
-    inFile.close();
+
+    int file = 0; 
+
+
+    Simulation sim; 
+
+
+    cout << "Which file would you like to read?" <<endl;
+    cout << "1. Easy.Txt" <<endl;
+    cout << "2. Medium.Txt" <<endl;
+    cout << "3. Hard Text" <<endl;
+    cin >> file;
+
+    sim.readFile(file);
+
+    sim.printCarsArrivalTime();
+    sim.printCarsDirection();
+    
+
+    return 0;
 }
