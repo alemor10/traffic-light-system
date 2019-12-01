@@ -3,11 +3,12 @@
 #include<iostream>
 #include <string> 
 
+#pragma once 
  
 using namespace std;
  
 struct Car {
-    Car(int carID, string interval, string direction){};
+    Car(int carID,string direction){};
     
     int carID;
     string arrivalTime;
