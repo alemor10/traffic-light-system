@@ -4,7 +4,7 @@
 
 
 
-#include "Car.h"
+//#include "Car.h"
 #include "TrafficLane.h"
 
 using namespace std;
@@ -17,7 +17,7 @@ class Simulation {
 
 
 
-    void printTrafficLane(vector<Car> vect)
+    void printTrafficLane(vector<int> vect)
     {
         
         for (int i=0; i<vect.size(); i++) 

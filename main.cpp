@@ -6,17 +6,23 @@
 
 #include "includes/Simulation.h"
 
- #define NUM_THREADS     40
+#define NUM_THREADS 40
 
 using namespace std;
 
-void *DoTask(void *anArg)
+typedef struct thread_data {
+    int arrivalTime;
+    string direction;
+} carThread;  
+
+void *DoTask(void *threadArg)
 {
-    long tArg;
+    
      
-    // retrieve the thread argument
-    tArg = (long)anArg;
-    printf("DoTask:input:argument:%d\n", tArg);
+    carThread *data;
+    data = (carThread *) threadArg;
+    //threadArg->arrivaltime;
+    printf("Thread %d says %s \n", data->arrivalTime, data->direction);
      
     //
     // RUN THE REST OF THE TASK...
@@ -62,8 +68,11 @@ void readFile(int num){
 
         if(direction == "N" )
         {
+            carThread car;
+            car.arrivalTime = arrivaltime;
+            car.direction = direction;
             int tErr;
-            tErr = pthread_create(&threads[threadcounter] , NULL, DoTask, (void *) arrivaltime );
+            tErr = pthread_create(&threads[threadcounter], NULL, DoTask ,(void *) &car );
             if(tErr)
             {
                 cout << "error creating thread wtf!" <<endl;
@@ -73,8 +82,11 @@ void readFile(int num){
         }
         else if (direction == "S")
         {
+            carThread car;
+            car.arrivalTime = arrivaltime;
+            car.direction = direction;
             int tErr;
-            tErr = pthread_create(&threads[threadcounter] , NULL, DoTask, (void *) arrivaltime );
+            tErr = pthread_create(&threads[threadcounter], NULL, DoTask ,(void *) &car );
             if(tErr)
             {
                 cout << "error creating thread wtf!" <<endl;
@@ -84,8 +96,11 @@ void readFile(int num){
         }
         else if (direction == "E")
         {
+            carThread car;
+            car.arrivalTime = arrivaltime;
+            car.direction = direction;
             int tErr;
-            tErr = pthread_create(&threads[threadcounter] , NULL, DoTask, (void *) arrivaltime );
+            tErr = pthread_create(&threads[threadcounter], NULL, DoTask ,(void *) &car );
             if(tErr)
             {
                 cout << "error creating thread wtf!" <<endl;
@@ -95,8 +110,11 @@ void readFile(int num){
         }
         else if (direction == "W")
         {
+            carThread car;
+            car.arrivalTime = arrivaltime;
+            car.direction = direction;
             int tErr;
-            tErr = pthread_create(&threads[threadcounter] , NULL, DoTask, (void *) arrivaltime );
+            tErr = pthread_create(&threads[threadcounter], NULL, DoTask ,(void *) &car );
             if(tErr)
             {
                 cout << "error creating thread wtf!" <<endl;
