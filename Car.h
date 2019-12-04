@@ -20,7 +20,7 @@ struct CompareCars {
     { 
         // return "true" if "p1" is ordered  
         // before "p2", for example: 
-        return p1->arrivalTime < p2->arrivalTime; 
+        return p1->arrivalTime > p2->arrivalTime; 
     } 
 }; 
   
