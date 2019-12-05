@@ -3,10 +3,14 @@
 using namespace std;
 
 struct Car {
+    bool ready;
+    int ID;
     int arrivalTime;
     string direction;
 
-    Car(int arrivalTime, string direction) {
+    Car(int ID ,int arrivalTime, string direction) {
+        this->ID = ID;
+        this->ready=false;
 		this->arrivalTime = arrivalTime;
 		this->direction = direction;
 	}

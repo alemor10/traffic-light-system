@@ -1,242 +1,383 @@
 #include <iostream>
 #include <string>
-#include <fstream>
 #include <thread>
 #include <vector>
-#include <condition_variable>
+#include <queue>
+#include <fstream>
+#include <sstream>
 #include <mutex>
+#include <algorithm>
+#include <map>
+#include <condition_variable>
 #include <chrono>
-#include <queue> 
-#include "unistd.h"
-
-#include "Car.h"
 
 using namespace std;
 
+struct Car {
+    int id;
+    int time;
+    string dest;
+    string origin;
+};
 
-void threadCallback(int, string);//needed here so threadback can be called 
+int driveTime = 5;
 
-string currDir = "N";	//keep track of the current direction thats going
-priority_queue<Car*, vector<Car*>, CompareCars> North;
-priority_queue<Car*, vector<Car*>, CompareCars> South;
-priority_queue<Car*, vector<Car*>, CompareCars> East;
-priority_queue<Car*, vector<Car*>, CompareCars> West;
-priority_queue<Car*, vector<Car*>, CompareCars> activeLane; 
-vector<thread> carThreads; // holds all of the car threads
+map<char, char> dict;
 
-mutex m_mutex;
-condition_variable cv;
+vector<Car> cars;
+
+ofstream outFile;
+
+queue<int> northQ;
+queue<int> southQ;
+queue<int> eastQ;
+queue<int> westQ;
+
+mutex inter00;
+mutex inter01; 
+mutex inter10;
+mutex inter11;
+
+mutex originN;
+mutex originS;
+mutex originE;
+mutex originW;
+// Positions of locks in the intersection
+
+/*
+                 |         |       |
+                 | originN |       |
+                 |         |       |
+                 |         |       |
+_________________                   _________________
+                  inter00   inter01     originE
+_________________                   _________________
+        originW   inter10   inter11
+_________________                   _________________
+                 |        |         |
+                 |        |         |
+                 |        | originS |
+                 |        |         |
+                 |        |         |
+*/
+
+// Lock used for logging
+mutex coutLock;
+
+bool compare(const Car &a, const Car &b){
+        return a.time < b.time;
+}
+
+void fileReader(string fileName){
+    // Read file and save each line as a Car object.
+    ifstream input;
+    input.open(fileName + ".txt");
+    if(!input){
+        cerr << "Unable to open file" << endl;
+        exit(1);
+    }
+    string line;
+    vector<Car> lines;
+    int i = 1;
+    while(getline(input, line)){
+        std::stringstream linestream(line);
+        string time;
+        string dir;
+        Car temp;
+
+        getline(linestream, time, ' ');
+        linestream >> dir;
+
+        if(dir.length() == 2){
+            temp.dest = dir[1];
+            temp.origin = dict[dir[0]];
+        }else{
+            temp.dest = dir[0];
+            temp.origin = dict[dir[0]];
+        }
+        temp.time = stoi(time);
+        temp.id = i;
+        cars.push_back(temp);
+        i++;
+    }
+    input.close();
+
+    // sort cars by time it takes to reach intersection
+    sort(cars.begin(), cars.end(), compare);
+    return;
+}
+
+// Function for printing Logs and writing output file
+void printLogs(Car c, int i){
+    switch (i){
+        case 1:
+            cout << "CAR #" << c.id << ": CREATED " << endl;
+            break;
+        case 2:
+            cout << "CAR #" << c.id << "  First in " << c.origin << " Queue" << endl;
+            outFile << "CAR #" << c.id << "  First in " << c.origin << " Queue" << "\n";
+            break;
+        case 3:
+            cout << "CAR #" << c.id << "  LEFT  " << "      Direction: " << c.origin << "-->" << c.dest <<  endl;
+            outFile << "CAR #" << c.id << "  LEFT  " << "      Direction: " << c.origin << "-->" << c.dest << "\n";
+            break;
+    }
+    return;
+}
+
+// Function to be executed by Cars comming from North
+void fromNorth(Car c){
+
+    coutLock.lock();
+    printLogs(c, 1);
+    coutLock.unlock();
+
+    this_thread::sleep_for (chrono::seconds(c.time));
+    northQ.push(c.id);
+    while(true){
+        if(northQ.front() == c.id){
+            coutLock.lock();
+            printLogs(c, 2);
+            coutLock.unlock();
+
+            lock_guard<mutex> lockOrigin(originN);
+
+            if(c.dest == "S"){
+                lock_guard<mutex> lock1(inter00);
+                lock_guard<mutex> lock2(inter10);
+                this_thread::sleep_for(chrono::seconds(driveTime));
+
+            }else if(c.dest == "W"){
+                lock_guard<mutex> lock1(inter00);
+                this_thread::sleep_for(chrono::seconds(driveTime));
+
+            }else if(c.dest == "E"){
+                lock_guard<mutex> lock1(inter00);
+                lock_guard<mutex> lock2(inter11);
+                this_thread::sleep_for(chrono::seconds(driveTime));
+            }
+            coutLock.lock();
+            printLogs(c, 3);
+            coutLock.unlock();
+            break;
+        }else{
+            continue;
+        }
+    }
+    northQ.pop();
+    return;
+}
+
+// Function to be executed by Cars comming from South
+void fromSouth(Car c){
+    coutLock.lock();
+    printLogs(c, 1);
+    coutLock.unlock();
+    
+    this_thread::sleep_for (chrono::seconds(c.time));
+    southQ.push(c.id);
+    while(true){
+        if(southQ.front() == c.id){
+            coutLock.lock();
+            printLogs(c, 2);
+            coutLock.unlock();
+            lock_guard<mutex> lockOrigin(originS);
+
+            if(c.dest == "N"){
+                lock_guard<mutex> lock1(inter11);
+                lock_guard<mutex> lock2(inter01);
+                this_thread::sleep_for(chrono::seconds(driveTime));
 
 
-void releaseCars()
+            }else if(c.dest == "W"){
+                lock_guard<mutex> lock1(inter11);
+                lock_guard<mutex> lock2(inter00);
+                this_thread::sleep_for(chrono::seconds(driveTime));
+
+
+            }else if(c.dest == "E"){
+                lock_guard<mutex> lock1(inter11);
+                this_thread::sleep_for(chrono::seconds(driveTime));
+
+            }
+            coutLock.lock();
+            printLogs(c, 3);
+            coutLock.unlock();
+            break;
+        }else{
+            continue;
+        }
+    }
+    southQ.pop();
+    return;
+}
+
+// Function to be executed by Cars comming from East
+void fromEast(Car c){
+
+    coutLock.lock();
+    printLogs(c, 1);
+    coutLock.unlock();
+
+    this_thread::sleep_for (chrono::seconds(c.time));
+    eastQ.push(c.id);
+    while(true){
+            if(eastQ.front() == c.id){
+
+                coutLock.lock();
+                printLogs(c, 2);
+                coutLock.unlock();
+
+                lock_guard<mutex> lockOrigin(originE);
+
+                if(c.dest == "W"){
+                    lock_guard<mutex> lock1(inter01);
+                    lock_guard<mutex> lock2(inter00);
+                    this_thread::sleep_for(chrono::seconds(driveTime));
+                }else if(c.dest == "S"){
+                    lock_guard<mutex> lock1(inter01);
+                    lock_guard<mutex> lock2(inter10);
+                    this_thread::sleep_for(chrono::seconds(driveTime));
+
+                }else if(c.dest == "N"){
+                    lock_guard<mutex> lock1(inter01);
+                    this_thread::sleep_for(chrono::seconds(driveTime));
+                }
+                coutLock.lock();
+                printLogs(c, 3);
+                coutLock.unlock();
+                break;  
+            }else{
+                continue;
+            }
+        }
+    eastQ.pop();
+    return;
+}
+
+// Function to be executed by Cars comming from West
+void fromWest(Car c){
+
+    coutLock.lock();
+    printLogs(c, 1);
+    coutLock.unlock();
+
+    this_thread::sleep_for (chrono::seconds(c.time));
+    westQ.push(c.id);
+    while(true){
+        if(westQ.front() == c.id){
+            coutLock.lock();
+            printLogs(c, 2);
+            coutLock.unlock();
+            lock_guard<mutex> lockOrigin(originW);
+            if(c.dest == "E"){
+                lock_guard<mutex> lock1(inter10);
+                lock_guard<mutex> lock2(inter11);
+                this_thread::sleep_for(chrono::seconds(driveTime));
+
+            }else if(c.dest == "N"){
+                lock_guard<mutex> lock1(inter10);
+                lock_guard<mutex> lock2(inter01);
+                this_thread::sleep_for(chrono::seconds(driveTime));
+
+            }else if(c.dest == "S"){
+                lock_guard<mutex> lock1(inter10);
+                this_thread::sleep_for(chrono::seconds(driveTime));
+            }
+            coutLock.lock();
+            printLogs(c, 3);
+            coutLock.unlock();
+            break;
+        }else{
+            continue;
+        }
+    }
+    westQ.pop();
+    return;
+}
+
+bool fileExists(string filename)
 {
-    string carDir;
-    int arrive;
-    string collision1 ="NW";
-    string collision2 ="SE";
-    string collision3 ="EN";
-    string collision4 ="WS";
+  ifstream ifile(filename);
+  return (bool)ifile;
+}
 
-    while (! activeLane.empty() ) {
-        Car* frontCar = activeLane.top(); 
-        carDir = frontCar->direction;
-        arrive = frontCar->arrivalTime;
-        //cout <<arrive << carDir <<endl;
+int main(){
+    if(fileExists("outFile.txt")){
+        remove("outFile.txt");
+    }
+    outFile.open("outFile.txt");
+    vector<thread> threads;
+    dict['N'] = 'S';
+    dict['S'] = 'N';
+    dict['E'] = 'W';
+    dict['W'] = 'E';
 
-        if(currDir =="N" && carDir.find(collision1) != std::string::npos)
-        {       
-            cout << "fina crash so we finna wait till all the other cars pass"<< arrive <<endl;
-            activeLane.pop();
+    string fileName;
+    cout << "input file name (simple, medium or difficult): ";
+    cin >> fileName;
+    outFile << "Output File for input file: " << fileName << "\n" << "\n";
+    fileReader(fileName);
 
+    auto start = chrono::steady_clock::now();
+    for(int i = 0; i < cars.size(); i++){
+        if(cars[i].origin == "N"){
+            threads.push_back(thread(fromNorth, cars[i]));
         }
-        else if(currDir =="N" && carDir.find(collision2) != std::string::npos)
-        {       
-            cout << "fina crash so we finna wait till all the other cars pass"<< arrive <<endl;
-            activeLane.pop();
-            cv.notify_one();
+        else if(cars[i].origin == "S"){
+            threads.push_back(thread(fromSouth, cars[i]));
         }
-        else if(currDir =="W" && carDir.find(collision3) != std::string::npos)
-        {       
-            cout << "fina crash so we finna wait till all the other cars pass"<< arrive <<endl;
-            activeLane.pop();
-            cv.notify_one();
+        else if(cars[i].origin == "E"){
+            threads.push_back(thread(fromEast, cars[i]));
         }
-        else if(currDir =="W" && carDir.find(collision4) != std::string::npos)
-        {       
-            cout << "fina crash so we finna wait till all the other cars pass"<< arrive <<endl;
-            activeLane.pop();
-            cv.notify_one();
-        }
-        else 
-        {
-            cout << "pop this pussi "<<endl;
-            activeLane.pop();
-            cv.notify_one();
+        else if(cars[i].origin == "W"){
+            threads.push_back(thread(fromWest, cars[i]));
         }
     }
 
-}
-
-
-
-void mainThreadFunction(int numAllowedCars)
-{
-    
-
-  
-
-}
-
-void threadCallback(int carArrival, string str)
-{
-    
-    if(str[0] == 'N')//check the first character of the string and sort into pq
-    {	
-        Car* newCar = new Car(carArrival, str);
-        unique_lock<mutex> mlock(m_mutex);
-		South.push(newCar);
-        string temp = newCar->direction.substr(0,1);
-        cout << newCar->arrivalTime <<" is now in the South Lane"<<endl;
-        while (South.top() != newCar  && currDir != temp)
-        {
-            cv.wait(mlock);
-        }
-
-        Car* tempCar = South.top();
-        South.pop();
-        activeLane.push(tempCar);
-        sleep(5);
-        cout << "aight fam im finna head out fam" << tempCar->arrivalTime << " " <<tempCar->direction <<endl;
-        activeLane.pop();
-
-
-	}
-    if(str[0] == 'S')//check the first character of the string and sort into pq
-    {	
-        Car* newCar = new Car(carArrival, str);
-        unique_lock<mutex> mlock(m_mutex);
-		North.push(newCar);
-        string temp = newCar->direction.substr(0,1);
-        cout << newCar->arrivalTime <<" is now in the North Lane"<<endl;
-        while (North.top() != newCar  && currDir != temp)
-        {
-            cout << temp <<endl;
-            cv.wait(mlock);
-        }
-        Car* tempCar = North.top();
-        North.pop();
-        activeLane.push(tempCar);
-        sleep(5);
-        cout << "aight fam im finna head out fam" << tempCar->arrivalTime << " " <<tempCar->direction <<endl;
-        activeLane.pop();
-	}
-    if(str[0] == 'W')//check the first character of the string and sort into pq
-    {	
-        Car* newCar = new Car(carArrival, str);
-        unique_lock<mutex> mlock(m_mutex);
-		East.push(newCar);
-        string temp = newCar->direction.substr(0,1);
-        while (East.top() != newCar  && currDir != temp)
-        {
-            cout << temp <<endl;
-            cv.wait(mlock);
-        }
-        Car* tempCar = East.top();
-        East.pop();
-        activeLane.push(tempCar);
-        sleep(5);
-        cout << "aight fam im finna head out fam" << tempCar->arrivalTime << " " <<tempCar->direction <<endl;
-        activeLane.pop();
-	}
-    if(str[0] == 'E')//check the first character of the string and sort into pq
-    {	
-        Car* newCar = new Car(carArrival, str);
-        unique_lock<mutex> mlock(m_mutex);
-		West.push(newCar);
-        string temp = newCar->direction.substr(0,1);	
-        while (West.top() != newCar  && currDir != temp)
-        {
-            cout << temp <<endl;
-            cv.wait(mlock);
-        }
-        Car* tempCar = West.top();
-        West.pop();
-        activeLane.push(tempCar);
-        sleep(5);
-        cout << "aight fam im finna head out fam" << tempCar->arrivalTime << " " <<tempCar->direction <<endl;
-        activeLane.pop();
-	}
-}
-
-int main()
-{
-    int file = 0;
-    int numAllowedCars;
-    int threadCount = 0;
-    string filename;
-    string fileline;			
-	ifstream myfile;
-    
-    //time_t start = time(0);
-    cout << "Which file would you like to read and allowed cars to pass per light?" <<endl;
-    cout << "1. Easy.Txt" <<endl;
-    cout << "2. Medium.Txt" <<endl;
-    cout << "3. Hard Text" <<endl;
-    cin >> file >> numAllowedCars;
-    //which file to use?
-	if(file == 1){
-        filename = "simple.txt";
-	}
-	else if (file == 2){
-		filename = "medium.txt";
-	}
-	else if (file == 3){
-		filename = "difficult.txt";
-	}
-	else exit(1);   // call system to stop
-	
-	
-
-    myfile.open(filename);	//open the file for use
-
-    //check that file exists and opens
-    if (!myfile)
-    {
-	    cerr << "Unable to open file" << endl;
-		exit(1);   // call system to stop
-	}
-    
-
-
-    time_t start = time(0);
-    while(getline(myfile,fileline))
-    {
-		size_t index = fileline.find(" ");
-		string arrivalTime = fileline.substr(0,index);
-        int tempArrivalTime = stoi(arrivalTime);
-		string direction = fileline.substr(index+1);
-        carThreads.push_back(thread(threadCallback,tempArrivalTime,direction));
-        cout << "Car Thread Created: " << threadCount << endl;
-        //sleep(1);
-        threadCount++;
-
+    for(int i = 0; i < threads.size(); i++){
+        threads[i].join();
     }
-    myfile.close();
-
-
-    thread releaseCars(mainThreadFunction,numAllowedCars);	//create threads to call the release function
-
-    releaseCars.join();
-    for (int i = 0; i < carThreads.size(); ++i) {
-		carThreads[i].join();	//join the car threads
-		cout << "Thread joined: " << i+1 << endl;
-	}
-
-
-    double seconds_since_start = difftime( time(0), start);	//end the timer and do the math to get final time
-	cout << "Total Time: " << seconds_since_start << "s" << endl;
-
-
+    auto end = chrono::steady_clock::now();
+    cout << "execution took " << chrono::duration_cast<chrono::seconds>(end - start).count() << "seconds." << endl;
+    outFile << "execution took " << chrono::duration_cast<chrono::seconds>(end - start).count() << "seconds.";
+    outFile.close();
     return 0;
 }
 
+
+
+    while (!North.empty() || !South.empty() || !East.empty() || !West.empty())
+    {
+        do 
+        {
+            if(trafficLight)
+            {
+                Car* northCar = South.top();
+                Car* southCar = North.top();
+                //cout << southCar->arrivalTime<<endl;
+                //cout << northCar->arrivalTime<<endl;
+                releaseCar(northCar);
+                releaseCar(southCar);
+                count++;
+
+            }
+        } while (count < numAllowedCars);
+    
+        trafficLight =!trafficLight;
+    
+        do
+        {
+            if(!trafficLight)
+            {
+                Car* eastCar = West.top();
+                Car* westCar = East.top();
+                //cout << southCar->arrivalTime<<endl;
+                //cout << northCar->arrivalTime<<endl;
+                releaseCar(eastCar);
+                releaseCar(westCar);
+                count--;
+            }
+        }while (count > numAllowedCars);
+        trafficLight =!trafficLight;
+    }

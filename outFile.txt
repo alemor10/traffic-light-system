@@ -1,0 +1,83 @@
+Output File for input file: simple
+
+CAR #1  First in S Queue
+CAR #1  LEFT        Direction: S-->N
+CAR #2  First in S Queue
+CAR #2  LEFT        Direction: S-->N
+CAR #3  First in S Queue
+CAR #11  First in N Queue
+CAR #11  LEFT        Direction: N-->S
+CAR #3  LEFT        Direction: S-->N
+CAR #4  First in S Queue
+CAR #12  First in N Queue
+CAR #21  First in E Queue
+CAR #4  LEFT        Direction: S-->N
+CAR #5  First in S Queue
+CAR #12  LEFT        Direction: N-->S
+CAR #13  First in N Queue
+CAR #21  LEFT        Direction: E-->W
+CAR #22  First in E Queue
+CAR #31  First in W Queue
+CAR #13  LEFT        Direction: N-->S
+CAR #5  LEFT        Direction: S-->N
+CAR #6  First in S Queue
+CAR #14  First in N Queue
+CAR #31  LEFT        Direction: W-->E
+CAR #22  LEFT        Direction: E-->W
+CAR #23  First in E Queue
+CAR #32  First in W Queue
+CAR #14  LEFT        Direction: N-->S
+CAR #6  LEFT        Direction: S-->N
+CAR #7  First in S Queue
+CAR #15  First in N Queue
+CAR #32  LEFT        Direction: W-->E
+CAR #33  First in W Queue
+CAR #23  LEFT        Direction: E-->W
+CAR #24  First in E Queue
+CAR #7  LEFT        Direction: S-->N
+CAR #15  LEFT        Direction: N-->S
+CAR #16  First in N Queue
+CAR #8  First in S Queue
+CAR #24  LEFT        Direction: E-->W
+CAR #33  LEFT        Direction: W-->E
+CAR #25  First in E Queue
+CAR #34  First in W Queue
+CAR #8  LEFT        Direction: S-->N
+CAR #16  LEFT        Direction: N-->S
+CAR #9  First in S Queue
+CAR #17  First in N Queue
+CAR #34  LEFT        Direction: W-->E
+CAR #35  First in W Queue
+CAR #25  LEFT        Direction: E-->W
+CAR #26  First in E Queue
+CAR #9  LEFT        Direction: S-->N
+CAR #10  First in S Queue
+CAR #17  LEFT        Direction: N-->S
+CAR #18  First in N Queue
+CAR #26  LEFT        Direction: E-->W
+CAR #35  LEFT        Direction: W-->E
+CAR #36  First in W Queue
+CAR #27  First in E Queue
+CAR #10  LEFT        Direction: S-->N
+CAR #18  LEFT        Direction: N-->S
+CAR #19  First in N Queue
+CAR #36  LEFT        Direction: W-->E
+CAR #27  LEFT        Direction: E-->W
+CAR #28  First in E Queue
+CAR #37  First in W Queue
+CAR #19  LEFT        Direction: N-->S
+CAR #20  First in N Queue
+CAR #37  LEFT        Direction: W-->E
+CAR #38  First in W Queue
+CAR #28  LEFT        Direction: E-->W
+CAR #29  First in E Queue
+CAR #20  LEFT        Direction: N-->S
+CAR #29  LEFT        Direction: E-->W
+CAR #30  First in E Queue
+CAR #38  LEFT        Direction: W-->E
+CAR #39  First in W Queue
+CAR #30  LEFT        Direction: E-->W
+CAR #39  LEFT        Direction: W-->E
+CAR #40  First in W Queue
+CAR #40  LEFT        Direction: W-->E
+execution took 116seconds.
