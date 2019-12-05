@@ -33,45 +33,59 @@ void threadCallback(int,int,string);//needed here so threadback can be called
 
 void releaseCar(Car* newCar)
 {
-    //Car* tempCar = South.top();
     unique_lock<mutex> mlock(m_mutex);
     newCar->ready=true;
     cv.notify_one();
-    usleep(50);
+    //this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
 void mainThreadFunction(int numAllowedCars)
 {
-    int count = 0;
-    
-    while (!North.empty() || !South.empty()) 
+    int stackTargetNorth = North.size() - numAllowedCars;
+    int stackTargetSouth = South.size() - numAllowedCars;
+    int stackTargetWest = West.size() - numAllowedCars;
+    int stackTargetEast  = East.size()-numAllowedCars;
+
+    while (!North.empty() || !South.empty() || !East.empty() || !West.empty()) 
     {
-        if(trafficLight){
+        while(North.size() != stackTargetNorth && South.size() !=stackTargetSouth)
+        {
+            //cout << "hi2"<<endl;
             Car* northCar = South.top();
             Car* southCar = North.top();
-            //cout << southCar->arrivalTime<<endl;
-            //cout << northCar->arrivalTime<<endl;
             releaseCar(northCar);
             releaseCar(southCar);
 
         }
-    }
-    trafficLight =!trafficLight;
-
-    while (!East.empty() || !West.empty()) 
-    {
-        if(!trafficLight){
+        if(North.size()-numAllowedCars >=0 && South.size()-numAllowedCars>=0)
+        {
+            stackTargetNorth=North.size()-numAllowedCars;
+            stackTargetSouth = South.size()-numAllowedCars;
+        }
+        else
+        {
+            stackTargetNorth=0;
+            stackTargetSouth=0;
+        }
+        while(East.size() != stackTargetEast && West.size() !=stackTargetEast)
+        {
             Car* eastCar = West.top();
             Car* westCar = East.top();
-            //cout << southCar->arrivalTime<<endl;
-            //cout << northCar->arrivalTime<<endl;
             releaseCar(eastCar);
             releaseCar(westCar);
 
         }
+        if(East.size()-numAllowedCars > 0 && South.size()-numAllowedCars>=0)
+        {
+            stackTargetEast=East.size()-numAllowedCars;
+            stackTargetWest=West.size()-numAllowedCars;
+        }
+        else
+        {
+            stackTargetEast=0;
+            stackTargetWest=0;
+        }
     }
-
-
 }
 
 void threadCallback(int vectorPos,int carArrival, string str)
@@ -81,67 +95,64 @@ void threadCallback(int vectorPos,int carArrival, string str)
 
      if(str[0] == 'N')
      {
-        //cout << "im going into the south queue" << newCar->arrivalTime << " " <<newCar->direction <<endl;
+        cout << "im going into the south queue" << newCar->direction << " " <<newCar->ID <<endl;
         South.push(newCar);
-        ready.at(vectorPos) = false;
-        while (!(newCar->ready) || !trafficLight || South.top()!= newCar)
+        while (!(newCar->ready)  || South.top()!= newCar)
         {
             cv.wait(mlock);
         }
-        //cout <<"i should be unlocked"<<endl;
+        cout <<newCar->ID << "is now unlocked"<<endl;
+        this_thread::sleep_for(std::chrono::milliseconds(100));
         South.pop();
         activeLane.push(newCar);
-        this_thread::sleep_for(std::chrono::milliseconds(200));
-        cout << "aight fam im finna head out fam" << newCar->arrivalTime << " " <<newCar->direction <<endl;
+        cout << "im finna head out" << newCar->direction << " " <<newCar->ID <<endl;
         activeLane.pop();
-        //cout << South.size() <<endl;
      }
      if(str[0] == 'S')
      {
-        //cout << "im going into the North queue" << newCar->arrivalTime << " " <<newCar->direction <<endl;
+        cout << "im going into the North queue" << newCar->arrivalTime << " " <<newCar->direction <<endl;
         North.push(newCar);
-        ready.at(vectorPos) = false;
-        while (!(newCar->ready) ||!trafficLight || North.top()!= newCar)
+        while (!(newCar->ready) || North.top()!= newCar)
         {
             cv.wait(mlock);
         }
-        //cout <<"i should be unlocked"<<endl;
+        cout <<newCar->ID << "is now unlocked"<<endl;
+        this_thread::sleep_for(std::chrono::milliseconds(100));
         North.pop();
         activeLane.push(newCar);
-        this_thread::sleep_for(std::chrono::milliseconds(200));
-        cout << "aight fam im finna head out fam" << newCar->arrivalTime << " " <<newCar->direction <<endl;
+        cout << "im finna head out" << newCar->direction << " " <<newCar->ID <<endl;
         activeLane.pop();
 
      }
      if(str[0] == 'W')
      {
+        cout << "im going into the East queue" << newCar->arrivalTime << " " <<newCar->direction <<endl;
         East.push(newCar);
-        ready.at(vectorPos) = false;
-        while (!(newCar->ready) ||  trafficLight || East.top()!= newCar)
+        while (!(newCar->ready) || East.top()!= newCar)
         {
           cv.wait(mlock);
         }
-        //cout <<"i should be unlocked"<<endl;
+        cout <<newCar->ID << "is now unlocked"<<endl;
+        this_thread::sleep_for(std::chrono::milliseconds(100));
         East.pop();
         activeLane.push(newCar);
-        this_thread::sleep_for(std::chrono::milliseconds(200));
-        cout << "aight fam im finna head out fam" << newCar->arrivalTime << " " <<newCar->direction <<endl;
+        cout << "im finna head out fam" << newCar->direction << " " <<newCar->ID <<endl;
         activeLane.pop();
 
      }  
      if(str[0] == 'E')
      {
+        cout << "im going into the West queue" << newCar->arrivalTime << " " <<newCar->direction <<endl;
         West.push(newCar);
-        ready.at(vectorPos) = false;
-        while (!(newCar->ready) || trafficLight || West.top()!= newCar)
+        while (!(newCar->ready) || West.top()!= newCar)
         {
             cv.wait(mlock);
         }
-        //cout <<"i should be unlocked"<<endl;
+        cout <<newCar->ID << "is now unlocked"<<endl;
+        this_thread::sleep_for(std::chrono::milliseconds(100));
         West.pop();
         activeLane.push(newCar);
-        this_thread::sleep_for(std::chrono::milliseconds(200));
-        cout << "aight fam im finna head out fam" << newCar->arrivalTime << " " <<newCar->direction <<endl;
+        cout << "im finna head out fam" << newCar->direction << " " <<newCar->ID <<endl;
         activeLane.pop();
      }
     
@@ -198,12 +209,13 @@ int main()
         int tempArrivalTime = stoi(arrivalTime);
 		string direction = fileline.substr(index+1);
         carThreads.push_back(thread(threadCallback,threadCount,tempArrivalTime,direction));
-        //cout << "Car Thread Created: " << threadCount << endl;
+        cout << "Car Thread Created: " << threadCount << endl;
         sleep(1);
         threadCount++;
 
     }
     myfile.close();
+    bool begin = false;
 
     thread releaseCars(mainThreadFunction,numAllowedCars);	//create threads to call the release function
 
