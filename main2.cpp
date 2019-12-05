@@ -36,7 +36,7 @@ void releaseCar(Car* newCar)
     unique_lock<mutex> mlock(m_mutex);
     newCar->ready=true;
     cv.notify_one();
-    //this_thread::sleep_for(std::chrono::milliseconds(100));
+    this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
 void mainThreadFunction(int numAllowedCars)
@@ -50,11 +50,11 @@ void mainThreadFunction(int numAllowedCars)
     {
         while(North.size() != stackTargetNorth && South.size() !=stackTargetSouth)
         {
-            //cout << "hi2"<<endl;
             Car* northCar = South.top();
             Car* southCar = North.top();
             releaseCar(northCar);
             releaseCar(southCar);
+            cout <<"i should be popping like wtf"<<endl;
 
         }
         if(North.size()-numAllowedCars >=0 && South.size()-numAllowedCars>=0)
@@ -102,7 +102,7 @@ void threadCallback(int vectorPos,int carArrival, string str)
             cv.wait(mlock);
         }
         cout <<newCar->ID << "is now unlocked"<<endl;
-        this_thread::sleep_for(std::chrono::milliseconds(100));
+        this_thread::sleep_for(std::chrono::milliseconds(200));
         South.pop();
         activeLane.push(newCar);
         cout << "im finna head out" << newCar->direction << " " <<newCar->ID <<endl;
@@ -117,7 +117,7 @@ void threadCallback(int vectorPos,int carArrival, string str)
             cv.wait(mlock);
         }
         cout <<newCar->ID << "is now unlocked"<<endl;
-        this_thread::sleep_for(std::chrono::milliseconds(100));
+        this_thread::sleep_for(std::chrono::milliseconds(200));
         North.pop();
         activeLane.push(newCar);
         cout << "im finna head out" << newCar->direction << " " <<newCar->ID <<endl;
@@ -133,7 +133,7 @@ void threadCallback(int vectorPos,int carArrival, string str)
           cv.wait(mlock);
         }
         cout <<newCar->ID << "is now unlocked"<<endl;
-        this_thread::sleep_for(std::chrono::milliseconds(100));
+        this_thread::sleep_for(std::chrono::milliseconds(200));
         East.pop();
         activeLane.push(newCar);
         cout << "im finna head out fam" << newCar->direction << " " <<newCar->ID <<endl;
@@ -149,7 +149,7 @@ void threadCallback(int vectorPos,int carArrival, string str)
             cv.wait(mlock);
         }
         cout <<newCar->ID << "is now unlocked"<<endl;
-        this_thread::sleep_for(std::chrono::milliseconds(100));
+        this_thread::sleep_for(std::chrono::milliseconds(200));
         West.pop();
         activeLane.push(newCar);
         cout << "im finna head out fam" << newCar->direction << " " <<newCar->ID <<endl;
